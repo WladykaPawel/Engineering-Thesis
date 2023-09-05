@@ -26,8 +26,8 @@ const MainScreen = ({ navigation }) => {
   return (
     <View style={styles.container} >
       <LinearGradient
-        colors={['#C679EA', '#C7EEFF', '#D782D9', '#C679EA','#C7EEFF', '#D782D9']}
-        locations={[0.4, 0.5, 0.6, 0.70, 0.8, 0.9]}
+        colors={['#9dfbb2', '#7ad98f', '#9dfbb2', '#7ad98f']}
+        locations={[0.4, 0.6, 0.70, 0.9]}
         style={styles.background}
       >
       {/* <ImageBackground
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     fontSize: 56,
     fontFamily: 'Inter',
     fontWeight: '400',
-    color: '#c36691',
+    color: '#33a34b',
     textAlign: 'center',
     paddingTop: 70,
     textShadowColor: 'black', // Kolor obramowania (czarny)
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
    },
   name2: {
-    color: '#C7EEFF',
+    color: '#4aef6e',
    },
   image: {
     width: 82, 

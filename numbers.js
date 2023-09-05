@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking, Image, FlatList} from 'react-native';
 import { ScrollView } from 'react-native';
-import { G } from 'react-native-svg';
+
 
 const phoneNumber = '112';
 const police = '997';
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#d68adc',
+    backgroundColor: '#3ba118',
     width: '100%', 
     padding: 20,
   },
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     margin: 3,
   },
   textcontainer: {
-    backgroundColor: '#dee2dd',
+    backgroundColor: '#9fffc7',
     margin: 0,
     width: '100%', 
     padding: 20,
