@@ -1,102 +1,87 @@
-import React, { Component } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Calendar } from 'react-native-calendars';
-import moment from 'moment';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
+import SQLite from 'react-native-sqlite-storage';
 
-class History extends Component {
-  constructor(props) {
-    super(props);
+const PastAppointments = () => {
+  const [pastAppointments, setPastAppointments] = useState([]);
+  const db = SQLite.openDatabase({ name: 'appointments.db', location: 'default' });
 
-    this.state = {
-      selectedStartDate: '',
-      selectedEndDate: '',
-      markedDates: {},
-    };
-  }
+  useEffect(() => {
+    getPastAppointments();
+  }, []);
 
-  handleDayPress = (day) => {
-    const { selectedStartDate, selectedEndDate } = this.state;
-
-    if (!selectedStartDate) {
-      // Wybór pierwszej daty zakresu
-      this.setState({
-        selectedStartDate: day.dateString,
-        selectedEndDate: '',
-        markedDates: {
-          [day.dateString]: { selected: true, startingDay: true, endingDay: true },
+  const getPastAppointments = () => {
+    const currentDate = new Date().toISOString().split('T')[0];
+    db.transaction((tx) => {
+      tx.executeSql(
+        'SELECT * FROM appointments WHERE date < ?',
+        [currentDate],
+        (tx, results) => {
+          const appointments = [];
+          for (let i = 0; i < results.rows.length; i++) {
+            appointments.push(results.rows.item(i));
+          }
+          setPastAppointments(appointments);
         },
-      });
-    } else if (!selectedEndDate) {
-      // Wybór drugiej daty zakresu
-      const range = this.createDateRange(selectedStartDate, day.dateString);
-      const markedDates = {};
-
-      range.forEach((date) => {
-        markedDates[date] = { selected: true, color: 'blue' };
-      });
-
-      this.setState({
-        selectedEndDate: day.dateString,
-        markedDates: {
-          ...this.state.markedDates,
-          ...markedDates,
-        },
-      });
-    } else {
-      // Resetowanie wyboru
-      this.setState({
-        selectedStartDate: day.dateString,
-        selectedEndDate: '',
-        markedDates: {
-          [day.dateString]: { selected: true, startingDay: true, endingDay: true },
-        },
-      });
-    }
+        (error) => {
+          console.error('Błąd SQL:', error);
+        }
+      );
+    });
   };
 
-  createDateRange = (start, end) => {
-    const startDate = moment(start);
-    const endDate = moment(end);
-    const range = [];
-
-    while (startDate <= endDate) {
-      range.push(startDate.format('YYYY-MM-DD'));
-      startDate.add(1, 'days');
+  const renderPastAppointments = () => {
+    if (pastAppointments.length === 0) {
+      return <Text>Brak przeszłych wizyt</Text>;
     }
-
-    return range;
-  };
-
-  render() {
-    const { selectedStartDate, selectedEndDate } = this.state;
 
     return (
-      <View style={styles.container}>
-        <Calendar
-          onDayPress={this.handleDayPress}
-          markedDates={this.state.markedDates}
-        />
-        <View style={styles.selectionContainer}>
-          <Text>Wybrany zakres dat:</Text>
-          <Text>
-            {selectedStartDate && selectedEndDate
-              ? `${selectedStartDate} - ${selectedEndDate}`
-              : 'Brak wybranego zakresu'}
-          </Text>
-        </View>
-      </View>
+      <ScrollView style={styles.scrollView}>
+        <Text>Twoje przeszłe wizyty</Text>
+        {pastAppointments.map((appointment) => (
+          <View key={appointment.id} style={styles.appointmentItem}>
+            <Text>Data wizyty: {appointment.date}</Text>
+            <Text>Lekarz: {appointment.doctor_name}</Text>
+            <Text>Lokalizacja: {appointment.location}</Text>
+            <Text>Numer gabinetu/pokoju: {appointment.room_number}</Text>
+            <Text>Informacje dodatkowe: {appointment.additional_info}</Text>
+            <Text>Godzina wizyty: {appointment.appointment_time}</Text>
+          </View>
+        ))}
+      </ScrollView>
     );
-  }
-}
+  };
+
+  return (
+    <View style={styles.container}>
+      {renderPastAppointments()}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
-  },
-  selectionContainer: {
+    backgroundColor: '#f0f0f0',
     padding: 16,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  appointmentItem: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 10,
+    marginBottom: 10,
+    backgroundColor: 'white',
+    borderRadius: 5,
   },
 });
 
-export default History;
+export default PastAppointments;

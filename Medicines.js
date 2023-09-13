@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 
 import { Picker } from '@react-native-picker/picker';
 import { Calendar } from 'react-native-calendars';
 import SQLite from 'react-native-sqlite-storage';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const Medicines = () => {
-  const [selectedTab, setSelectedTab] = useState('leki');
+  const [selectedTab, setSelectedTab] = useState('Aktywne');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedDoseCount, setSelectedDoseCount] = useState('');
   const [medicines, setMedicines] = useState([]);
@@ -19,6 +20,11 @@ const Medicines = () => {
   const [dosingTimes, setDosingTimes] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
   const [inactiveMedicines, setInactiveMedicines] = useState([]);
+  const [showTimePickers, setShowTimePickers] = useState(Array.from({ length: 3 }).fill(false)); // Zakładam maksymalnie 3 dawki, dostosuj to do swoich potrzeb
+  const [selectedTimes, setSelectedTimes] = useState(Array.from({ length: 3 }).fill(''));
+
+
+
 
   const db = SQLite.openDatabase({ name: 'medicines.db', location: 'default' });
 
@@ -51,8 +57,15 @@ const Medicines = () => {
   const addMedicineToDatabase = (medicineData) => {
     console.log('Dodawanie leku do bazy danych:', medicineData);
   
-    // Sprawdź, czy przynajmniej jedna godzina przyjmowania została podana
-    if (medicineData.dosing_times.some((time) => time !== '')) {
+    // Sprawdź, czy wszystkie godziny przyjmowania zostały wprowadzone
+    if (medicineData.dosing_times.every((time) => time !== '')) {
+      let dosingTimesToSave = medicineData.dosing_times;
+  
+      // Jeśli ilość dawek jest mniejsza niż obecna ilość godzin, usuń nadmiarowe godziny
+      if (parseInt(medicineData.dose_count) < dosingTimesToSave.length) {
+        dosingTimesToSave = dosingTimesToSave.slice(0, parseInt(medicineData.dose_count));
+      }
+  
       db.transaction((tx) => {
         tx.executeSql(
           'INSERT INTO medicines (name, dosage, start_date, end_date, dose_count, dosing_schedule, dosing_times) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -61,13 +74,15 @@ const Medicines = () => {
             medicineData.dosage,
             medicineData.start_date,
             medicineData.end_date,
-            selectedDoseCount,
+            medicineData.dose_count,
             medicineData.dosing_schedule,
-            medicineData.dosing_times.join(','), // Połącz godziny przyjmowania w jeden ciąg
+            dosingTimesToSave.join(','), // Połącz godziny przyjmowania w jeden ciąg
           ],
           (tx, results) => {
             if (results.rowsAffected > 0) {
               console.log('Lek został dodany do bazy danych');
+              setDoseCountInput('');
+              setSelectedTimes(Array.from({ length: parseInt(medicineData.dose_count) }).fill(''));
               getActiveMedicines();
               getInactiveMedicines();
             } else {
@@ -83,6 +98,8 @@ const Medicines = () => {
       console.log('Nie wprowadzono odpowiedniej ilości godzin przyjmowania.');
     }
   };
+  
+  
   
 
   const deleteMedicine = (id) => {
@@ -185,9 +202,36 @@ const Medicines = () => {
     setDosingTimes(updatedDosingTimes);
   };
 
+  const handleTimeChange = (event, selected, index) => {
+    if (event.nativeEvent.type === 'dismissed') {
+      // Użytkownik zamknął wybór czasu, nie rób nic
+      return;
+    }
+  
+    setShowTimePickers(prevState => prevState.map((value, i) => i === index ? false : value));
+  
+    if (selected) {
+      const hours = selected.getHours();
+      const minutes = selected.getMinutes();
+      const formattedHours = hours.toLocaleString('en-US', { minimumIntegerDigits: 2 });
+      const formattedMinutes = minutes.toLocaleString('en-US', { minimumIntegerDigits: 2 });
+      const formattedTime = `${formattedHours}:${formattedMinutes}`;
+      const updatedDosingTimes = [...selectedTimes];
+      updatedDosingTimes[index] = formattedTime;
+      setSelectedTimes(updatedDosingTimes);
+  
+      // Dodaj tę linię, aby zaktualizować dosingTimes
+      handleDosingTimeChange(index, formattedTime);
+    }
+  };
+  
+  
+  
+  
+
   const renderContent = () => {
     switch (selectedTab) {
-      case 'leki':
+      case 'Aktywne':
         return (
           <ScrollView style={styles.scrollView}>
             <Text>Aktywne</Text>
@@ -210,7 +254,7 @@ const Medicines = () => {
             ))}
           </ScrollView>
         );
-      case 'inne':
+      case 'Nieaktywne':
         return (
           <ScrollView style={styles.scrollView}>
             <Text>Nieaktywne</Text>
@@ -233,7 +277,7 @@ const Medicines = () => {
             ))}
           </ScrollView>
         );
-      case 'inne2':
+      case 'Dodaj':
         return (
           <ScrollView style={styles.scrollView}>
             <TextInput
@@ -246,6 +290,12 @@ const Medicines = () => {
               placeholder="Dawka leku"
               onChangeText={(text) => setMedicineDosage(text)}
               value={medicineDosage}
+              style={styles.filing_place}
+            />
+            <TextInput
+              placeholder="Sposób przyjmowania"
+              onChangeText={(text) => setDosingSchedule(text)}
+              value={dosingSchedule}
               style={styles.filing_place}
             />
             <Picker
@@ -261,16 +311,28 @@ const Medicines = () => {
             </Picker>
 
             {doseCountInput && parseInt(doseCountInput) > 0 && (
-              <View>
-                <Text>Godziny przyjmowania:</Text>
-                {[...Array(parseInt(doseCountInput))].map((_, index) => (
-                  <TextInput
-                    key={index}
-                    placeholder={`Godzina ${index + 1}`}
-                    onChangeText={(text) => handleDosingTimeChange(index, text)}
-                    value={dosingTimes[index] || ''}
-                    style={styles.filing_place}
-                  />
+              <View style={styles.TimeButtons}>
+                {Array.from({ length: parseInt(doseCountInput) }).map((_, index) => (
+                  <View key={index}>
+                    {selectedTimes[index] === '' ? (
+                        <TouchableOpacity style={styles.addButton} onPress={() => setShowTimePickers(prevState => prevState.map((value, i) => i === index ? true : value))}>
+                        <Text>Wybierz godzinę</Text>
+                         </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity style={styles.addButton} onPress={() => setShowTimePickers(prevState => prevState.map((value, i) => i === index ? true : value))}>
+                          <Text>{selectedTimes[index]} </Text>
+                        </TouchableOpacity>
+                      )}
+                    {showTimePickers[index] && (
+                      <DateTimePicker
+                        value={new Date(selectedTimes[index] || new Date())}
+                        mode="time"
+                        is24Hour={true}
+                        display="default"
+                        onChange={(event, selected) => handleTimeChange(event, selected, index)}
+                      />
+                    )}
+                  </View>
                 ))}
               </View>
             )}
@@ -312,10 +374,10 @@ const Medicines = () => {
         <TouchableOpacity
           style={[
             styles.tabButton,
-            selectedTab === 'leki' && styles.selectedTab,
+            selectedTab === 'Aktywne' && styles.selectedTab,
           ]}
           onPress={() => {
-            setSelectedTab('leki');
+            setSelectedTab('Aktywne');
             getActiveMedicines();
           }}
         >
@@ -324,10 +386,10 @@ const Medicines = () => {
         <TouchableOpacity
           style={[
             styles.tabButton,
-            selectedTab === 'inne' && styles.selectedTab,
+            selectedTab === 'Nieaktywne' && styles.selectedTab,
           ]}
           onPress={() => {
-            setSelectedTab('inne');
+            setSelectedTab('Nieaktywne');
             getInactiveMedicines();
           }}
         >
@@ -336,9 +398,9 @@ const Medicines = () => {
         <TouchableOpacity
           style={[
             styles.tabButton,
-            selectedTab === 'inne2' && styles.selectedTab,
+            selectedTab === 'Dodaj' && styles.selectedTab,
           ]}
-          onPress={() => setSelectedTab('inne2')}
+          onPress={() => setSelectedTab('Dodaj')}
         >
           <Text style={styles.tabText}>Dodaj nowy lek</Text>
         </TouchableOpacity>
@@ -433,6 +495,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#9dfbb2',
     marginBottom: 10,
   },
+  TimeButtons:
+  {
+    flex: 1,
+    alignItems: 'center',
+    flexDirection: 'row',
+  }
 });
 
 export default Medicines;
