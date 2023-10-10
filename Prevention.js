@@ -45,7 +45,6 @@ const Prevention = () => {
     });
 
     console.log('Natychmiastowe powiadomienie wysłane');
-    alert('Natychmiastowe powiadomienie zostało wysłane.');
   };
 
   const scheduleNotification = () => {
@@ -54,13 +53,14 @@ const Prevention = () => {
       return;
     }
 
-    PushNotification.localNotification({
+    PushNotification.localNotificationSchedule({
       channelId: 'channel-id', // Nazwa kanału
       title: 'Powiadomienie',
       message: 'To jest przykładowe powiadomienie w React Native o konkretnej porze.',
       largeIcon: 'ic_launcher',
       smallIcon: 'ic_notification',
-      date: new Date(new Date().getTime() + 3000),
+      date: new Date(selectedTime.getTime() + 3000),
+      allowWhileIdle: true,
     });
 
     console.log('Powiadomienie zaplanowane na:', selectedTime);
@@ -91,7 +91,7 @@ const Prevention = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Podstrona wizyt lekarskich</Text>
+      <Text style={styles.title}>Test powiadomień</Text>
       {showTimePicker && (
         <DateTimePicker
           value={selectedTime}
@@ -101,14 +101,14 @@ const Prevention = () => {
           onChange={handleTimeChange}
         />
       )}
-      {/* Warunkowe renderowanie: przycisk "Wybierz godzinę" lub wybrana godzina */}
+      
       {SwithButton ? (
         <TouchableOpacity onPress={() => switchButton()}>
-         <Text>Wybrana godzina: {selectedTime.getHours()}:{selectedTime.getMinutes()}</Text>
+         <Text style={styles.title} >Wybrana godzina: {selectedTime.getHours()}:{selectedTime.getMinutes()}</Text>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity onPress={() => switchButton()}>
-          <Text>Wybierz godzinę</Text>
+          <Text style={styles.title2} >Wybierz godzinę</Text>
         </TouchableOpacity>
       )}
       <Button title="Natychmiastowe powiadomienie" onPress={sendImmediateNotification} />
@@ -124,10 +124,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    width: '100%',
+    backgroundColor: '#3ba118',
   },
   title: {
-    fontSize: 24,
+    fontSize: 36,
     fontWeight: 'bold',
+  },
+  title2: {
+    fontSize: 24,
+    backgroundColor: '#26c96a',
   },
 });
 

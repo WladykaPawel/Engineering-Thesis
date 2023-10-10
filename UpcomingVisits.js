@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,16 @@ import {
   TextInput,
   ScrollView,
   Platform,
+  SafeAreaView,
+  StatusBar,
+  Button
 } from 'react-native';
 import SQLite from 'react-native-sqlite-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar } from 'react-native-calendars';
-import { Linking } from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
+import FileViewer from 'react-native-file-viewer';
+
 
 const Appointments = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -24,9 +28,12 @@ const Appointments = () => {
   const [selectedTime, setSelectedTime] = useState('');
   const [appointments, setAppointments] = useState([]);
   const [isAddAppointmentFormVisible, setIsAddAppointmentFormVisible] = useState(false);
-  const [selectedPdfUri, setSelectedPdfUri] = useState(''); 
-  const [selectedPdfName, setSelectedPdfName] = useState('');
-  
+  const [fileResponse, setFileResponse] = useState([]);
+  const [selectedPdfurl, setSelectedPdfurl] = useState('');
+  const [isFileViewerVisible, setIsFileViewerVisible] = useState(false);
+  const [fileUrlToOpen, setFileUrlToOpen] = useState('');
+
+
 
 
   const db = SQLite.openDatabase({ name: 'appointments.db', location: 'default' });
@@ -42,7 +49,7 @@ const Appointments = () => {
           room_number TEXT,
           additional_info TEXT,
           appointment_time TEXT,
-          images TEXT
+          files TEXT
         )`,
         [],
         () => {
@@ -57,40 +64,12 @@ const Appointments = () => {
     getUpcomingAppointments();
   }, []);
   
-  const pickDocument = async () => {
-    try {
-      const result = await DocumentPicker.pick({
-        type: [DocumentPicker.types.pdf], // Specify the allowed file types
-      });
-  
-      if (result) {
-        setSelectedPdfUri(result.uri);
-        setSelectedPdfName(result.name);
-        console.log(
-          'Document picked: ' + result.uri,
-          result.type, // mime type
-          result.name, // file name
-          result.size // file size (in bytes)
-        );
-      } else {
-        console.log('No document picked');
-      }
-    } catch (err) {
-      console.error('Error picking document:', err);
-      if (DocumentPicker.isCancel(err)) {
-        console.log('Document picking canceled');
-      } else {
-        throw err;
-      }
-    }
-  };
-  
-  
+
 
   const insertAppointment = () => {
     db.transaction((tx) => {
       tx.executeSql(
-        'INSERT INTO appointments (date, doctor_name, location, room_number, additional_info, appointment_time, images) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO appointments (date, doctor_name, location, room_number, additional_info, appointment_time, files) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [
           selectedDate.toISOString(),
           doctorName,
@@ -98,11 +77,18 @@ const Appointments = () => {
           roomNumber,
           additionalInfo,
           selectedTime,
-          selectedPdfUri, // Dodaj ścieżkę do pliku PDF do bazy danych
+          selectedPdfurl, // Dodaj ścieżkę do pliku PDF do bazy danych
         ],
         (tx, results) => {
           if (results.rowsAffected > 0) {
-            console.log('Wizyta została dodana do bazy danych');
+            console.log('Wizyta została dodana do bazy danych. Szczegóły:');
+            console.log('Data: ' + selectedDate.toISOString());
+            console.log('Lekarz: ' + doctorName);
+            console.log('Lokalizacja: ' + location);
+            console.log('Numer gabinetu/pokoju: ' + roomNumber);
+            console.log('Informacje dodatkowe: ' + additionalInfo);
+            console.log('Godzina wizyty: ' + selectedTime);
+            console.log('URL pliku PDF: ' + selectedPdfurl);
             getUpcomingAppointments();
             resetForm();
           } else {
@@ -115,20 +101,52 @@ const Appointments = () => {
       );
     });
   };
-  const openPdf = (pdfUri) => {
-    // Upewnij się, że pdfUri jest poprawnym adresem URL do pliku PDF
-    if (pdfUri && typeof pdfUri === 'string') {
-      Linking.openURL(pdfUri)
-        .then(() => {
-          console.log('Plik PDF został otwarty');
-        })
-        .catch((error) => {
-          console.error('Błąd podczas otwierania pliku PDF:', error);
-        });
-    } else {
-      console.error('Nieprawidłowy adres URL pliku PDF');
+
+
+
+  const handleDocumentSelection = useCallback(async () => {
+    try {
+      const response = await DocumentPicker.pickSingle({
+        type: [DocumentPicker.types.pdf], mode : 'import', copyTo: 'documentDirectory',
+    });
+      setFileResponse(response);
+
+      console.log(response);
+      console.log(response.uri);
+      console.log(response.fileCopyUri);
+     setSelectedPdfurl(response.fileCopyUri); // Ustaw selectedPdfurl na URL wybranego pliku PDF
+      
+    } catch (err) {
+      console.warn(err);
     }
+  }, []);
+
+
+  
+
+
+
+
+  const openFile = (fileUrl) => {
+    FileViewer.open(fileUrl) // Otwórz plik PDF
+      .then(() => {
+        console.log('Plik PDF został otwarty.');
+      })
+      .catch((error) => {
+        console.error('Błąd podczas otwierania pliku PDF:', error);
+      });
   };
+
+
+
+
+
+
+
+
+
+  
+
   const deleteAppointment = (id) => {
     db.transaction((tx) => {
       tx.executeSql(
@@ -194,6 +212,7 @@ const Appointments = () => {
     setRoomNumber('');
     setAdditionalInfo('');
     setSelectedTime('');
+    setSelectedPdfurl('');
   };
 
   const handleTimeChange = (event, selected) => {
@@ -232,16 +251,33 @@ const Appointments = () => {
             <Text>Numer gabinetu/pokoju: {appointment.room_number}</Text>
             <Text>Informacje dodatkowe: {appointment.additional_info}</Text>
             <Text>Godzina wizyty: {appointment.appointment_time}</Text>
-              <View>
-                <Text>Wybrany plik PDF: {selectedPdfName}</Text>
-                <TouchableOpacity onPress={() => openPdf(selectedPdfUri)}>
-                  <Text style={styles.openPdfButton}>Otwórz PDF</Text>
-                </TouchableOpacity>
-              </View>
+            <Text>Pliki: {appointment.files}</Text>
+            
+            <TouchableOpacity onPress={() => openFile("///data/user/0/com.projekt/files/d688c8b5-f488-4760-9236-1fca810c1c5d/sample.pdf")}>
+              <Text style={styles.openPdfButton}>Otwórz Plik </Text>
+            </TouchableOpacity>
+
+                              {isFileViewerVisible && (
+                    <View style={styles.fileViewerContainer}>
+                      <FileViewer
+                        fileType="pdf" // Specify the file type if necessary (e.g., 'pdf', 'docx', 'xlsx')
+                        filePath={appointment.files}
+                        onError={(e) => console.log('Error:', e)}
+                        
+                      />
+                      <TouchableOpacity
+                        style={styles.closeFileButton}
+                        onPress={() => setIsFileViewerVisible(false)}
+                      >
+                        <Text style={styles.closeFileButtonText}>Close File</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
               <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => deleteAppointment(appointment.id)}
-            >
+              >
               <Text style={styles.deleteButtonText}>Usuń wizytę</Text>
             </TouchableOpacity>
           </View>
@@ -309,10 +345,19 @@ const Appointments = () => {
           }}
         />
 
-        <TouchableOpacity onPress={pickDocument}>
-          <Text style={styles.pickPdfButton}>Wybierz plik PDF</Text>
-        </TouchableOpacity>
-        <Text>Wybrany plik PDF: {selectedPdfName}</Text>
+        <SafeAreaView style={styles.container} >
+          <StatusBar barStyle={'dark-content'} />
+          {/* {fileResponse.map((file, index) => (
+            <Text
+              key={index.toString()}
+              style={styles.uri}
+              numberOfLines={1}
+              ellipsizeMode={'middle'}>
+              {file?.uri}
+            </Text>
+          ))} */}
+          <Button title="Select 📑" onPress={handleDocumentSelection} />
+        </SafeAreaView>
 
 
         <TouchableOpacity style={styles.addButton} onPress={() => insertAppointment()}>

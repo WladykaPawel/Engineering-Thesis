@@ -368,7 +368,6 @@ const Medicines = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Podstrona leków</Text>
       {renderContent()}
       <View style={styles.tabBar}>
         <TouchableOpacity
@@ -425,13 +424,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f0f0f0',
     padding: 16,
-    width: '95%',
+    width: '92%',
+    marginTop: 20,
   },
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
-    backgroundColor: '#eee',
+    backgroundColor: '#3ba118 ',
     paddingVertical: 10,
   },
   tabButton: {
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   selectedTab: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#26c96a',
     borderRadius: 20,
   },
   tabText: {
