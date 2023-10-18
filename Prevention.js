@@ -1,120 +1,62 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Button, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, Button, StyleSheet } from 'react-native';
 import PushNotification from 'react-native-push-notification';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const Prevention = () => {
-  const [selectedTime, setSelectedTime] = useState(new Date());
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [SwithButton, setSwithButton] = useState(false);
-  const [countdown, setCountdown] = useState(0);
+const UpcomingVisits = () => {
+  const [notificationTime, setNotificationTime] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(null);
 
   useEffect(() => {
-    // Tworzenie kanału powiadomień (tylko na Android)
-    if (Platform.OS === 'android') {
-      PushNotification.createChannel(
-        {
-          channelId: 'channel-id',
-          channelName: 'Nazwa kanału',
-        },
-        () => {}
-      );
-    }
-  }, []);
-
-  const handleTimeChange = (event, selected) => {
-    if (event.type === 'dismissed') {
-      // Użytkownik zamknął wybór czasu, nie rób nic
-      return;
-    }
-
-    setShowTimePicker(false);
-
-    if (selected) {
-      setSelectedTime(selected);
-    }
-  };
-
-  const sendImmediateNotification = () => {
-    PushNotification.localNotification({
-      channelId: 'channel-id', // Nazwa kanału
-      title: 'Powiadomienie',
-      message: 'To jest przykładowe natychmiastowe powiadomienie w React Native.',
-      largeIcon: 'ic_launcher',
-      smallIcon: 'ic_notification',
-    });
-
-    console.log('Natychmiastowe powiadomienie wysłane');
-  };
-
-  const scheduleNotification = () => {
-    if (selectedTime <= new Date()) {
-      alert('Wybierz przyszłą godzinę.');
-      return;
-    }
-
-    PushNotification.localNotificationSchedule({
-      channelId: 'channel-id', // Nazwa kanału
-      title: 'Powiadomienie',
-      message: 'To jest przykładowe powiadomienie w React Native o konkretnej porze.',
-      largeIcon: 'ic_launcher',
-      smallIcon: 'ic_notification',
-      date: new Date(selectedTime.getTime() + 3000),
-      allowWhileIdle: true,
-    });
-
-    console.log('Powiadomienie zaplanowane na:', selectedTime);
-    alert(`Powiadomienie zostanie wyświetlone o ${selectedTime.getHours()}:${selectedTime.getMinutes()}`);
-
-    // Rozpocznij odliczanie
-    startCountdown();
-  };
-
-  const switchButton = () => {
-    setShowTimePicker(true);
-    setSwithButton(true);
-  };
-
-  const startCountdown = () => {
-    const intervalId = setInterval(() => {
-      const now = new Date();
-      const timeDifference = selectedTime - now;
-
-      if (timeDifference <= 0) {
-        clearInterval(intervalId);
-        setCountdown(0);
+    const interval = setInterval(() => {
+      if (notificationTime > new Date()) {
+        const timeDiff = notificationTime - new Date();
+        const minutes = Math.floor((timeDiff % 3600000) / 60000);
+        const seconds = Math.floor((timeDiff % 60000) / 1000);
+        setTimeLeft(`${minutes}m ${seconds}s`);
       } else {
-        setCountdown(Math.floor(timeDifference / 1000));
+        setTimeLeft(null);
       }
     }, 1000);
+
+    return () => clearInterval(interval);
+  }, [notificationTime]);
+
+  const scheduleNotification = () => {
+    PushNotification.localNotificationSchedule({
+      title: 'Przypomnienie',
+      message: 'Czas na wizytę lekarską!',
+      date: notificationTime,
+    });
+    console.log('Ustawiono powiadomienie na czas' + notificationTime);
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Test powiadomień</Text>
-      {showTimePicker && (
-        <DateTimePicker
-          value={selectedTime}
-          mode="time"
-          is24Hour={true}
-          display="default"
-          onChange={handleTimeChange}
-        />
-      )}
-      
-      {SwithButton ? (
-        <TouchableOpacity onPress={() => switchButton()}>
-         <Text style={styles.title} >Wybrana godzina: {selectedTime.getHours()}:{selectedTime.getMinutes()}</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity onPress={() => switchButton()}>
-          <Text style={styles.title2} >Wybierz godzinę</Text>
-        </TouchableOpacity>
-      )}
-      <Button title="Natychmiastowe powiadomienie" onPress={sendImmediateNotification} />
-      <Button title="Zaplanuj powiadomienie" onPress={scheduleNotification} />
-      {countdown > 0 && <Text>Odliczanie: {countdown} sekund</Text>}
-      {/* Tutaj umieść resztę zawartości podstrony */}
+      <Text style={styles.title}>Ustal godzinę powiadomienia</Text>
+      <View style={styles.dateTimePicker}>
+        <Button title="Ustaw godzinę" onPress={() => setShowDatePicker(true)} />
+        {showDatePicker && (
+          <DateTimePicker
+            value={notificationTime}
+            mode="time"
+            is24Hour={true}
+            display="default"
+            onChange={(event, selectedTime) => {
+              if (event.type === 'set') {
+                setShowDatePicker(false);
+                setNotificationTime(selectedTime);
+              } else {
+                setShowDatePicker(false);
+              }
+            }}
+          />
+        )}
+      </View>
+      <Text style={styles.notificationTime}>Czas powiadomienia: {notificationTime.toLocaleTimeString()}</Text>
+      <Text style={styles.timeLeft}>Czas do powiadomienia: {timeLeft}</Text>
+      <Button title="Ustaw powiadomienie" onPress={scheduleNotification} />
     </View>
   );
 };
@@ -124,17 +66,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    width: '100%',
-    backgroundColor: '#3ba118',
   },
   title: {
-    fontSize: 36,
+    fontSize: 24,
     fontWeight: 'bold',
   },
-  title2: {
-    fontSize: 24,
-    backgroundColor: '#26c96a',
+  dateTimePicker: {
+    marginVertical: 20,
+  },
+  notificationTime: {
+    fontSize: 18,
+  },
+  timeLeft: {
+    fontSize: 18,
   },
 });
 
-export default Prevention;
+export default UpcomingVisits;

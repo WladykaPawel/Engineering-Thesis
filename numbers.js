@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#3ba118',
+    backgroundColor: '#9dfbb2',
     width: '100%', 
     padding: 20,
   },
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     margin: 3,
   },
   textcontainer: {
-    backgroundColor: '#9fffc7',
+    backgroundColor: '#ffffff',
     margin: 0,
     width: '100%', 
     padding: 20,

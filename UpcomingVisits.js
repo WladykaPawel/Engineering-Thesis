@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,12 @@ import {
   TextInput,
   ScrollView,
   Platform,
-  SafeAreaView,
-  StatusBar,
-  Button
+  Image,
 } from 'react-native';
 import SQLite from 'react-native-sqlite-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar } from 'react-native-calendars';
-import DocumentPicker from 'react-native-document-picker';
-import FileViewer from 'react-native-file-viewer';
-
+import Modal from 'react-native-modal';
 
 const Appointments = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -28,18 +24,13 @@ const Appointments = () => {
   const [selectedTime, setSelectedTime] = useState('');
   const [appointments, setAppointments] = useState([]);
   const [isAddAppointmentFormVisible, setIsAddAppointmentFormVisible] = useState(false);
-  const [fileResponse, setFileResponse] = useState([]);
-  const [selectedPdfurl, setSelectedPdfurl] = useState('');
-  const [isFileViewerVisible, setIsFileViewerVisible] = useState(false);
-  const [fileUrlToOpen, setFileUrlToOpen] = useState('');
-
-
-
+  const [editingAppointmentId, setEditingAppointmentId] = useState(null);
 
   const db = SQLite.openDatabase({ name: 'appointments.db', location: 'default' });
 
   useEffect(() => {
     db.transaction((tx) => {
+      // Create the "appointments" table
       tx.executeSql(
         `CREATE TABLE IF NOT EXISTS appointments (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,104 +39,80 @@ const Appointments = () => {
           location TEXT,
           room_number TEXT,
           additional_info TEXT,
-          appointment_time TEXT,
-          files TEXT
+          appointment_time TEXT
         )`,
         [],
         () => {
-          console.log('Tabela została utworzona lub już istnieje.');
+          console.log('Table "appointments" was created or already exists.');
         },
         (error) => {
-          console.error('Błąd podczas tworzenia tabeli:', error);
+          console.error('Error creating "appointments" table:', error);
+        }
+      );
+
+      // Create the "appointment_images" table
+      tx.executeSql(
+        `CREATE TABLE IF NOT EXISTS appointment_images (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          appointment_id INTEGER,
+          image_uri TEXT
+        )`,
+        [],
+        () => {
+          console.log('Table "appointment_images" was created or already exists.');
+        },
+        (error) => {
+          console.error('Error creating "appointment_images" table:', error);
         }
       );
     });
 
     getUpcomingAppointments();
   }, []);
-  
-
 
   const insertAppointment = () => {
     db.transaction((tx) => {
       tx.executeSql(
-        'INSERT INTO appointments (date, doctor_name, location, room_number, additional_info, appointment_time, files) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [
-          selectedDate.toISOString(),
-          doctorName,
-          location,
-          roomNumber,
-          additionalInfo,
-          selectedTime,
-          selectedPdfurl, // Dodaj ścieżkę do pliku PDF do bazy danych
-        ],
+        'INSERT INTO appointments (date, doctor_name, location, room_number, additional_info, appointment_time) VALUES (?, ?, ?, ?, ?, ?)',
+        [selectedDate.toISOString(), doctorName, location, roomNumber, additionalInfo, selectedTime],
         (tx, results) => {
           if (results.rowsAffected > 0) {
-            console.log('Wizyta została dodana do bazy danych. Szczegóły:');
-            console.log('Data: ' + selectedDate.toISOString());
-            console.log('Lekarz: ' + doctorName);
-            console.log('Lokalizacja: ' + location);
-            console.log('Numer gabinetu/pokoju: ' + roomNumber);
-            console.log('Informacje dodatkowe: ' + additionalInfo);
-            console.log('Godzina wizyty: ' + selectedTime);
-            console.log('URL pliku PDF: ' + selectedPdfurl);
+            console.log('Appointment added to the database. Details:');
+            console.log('Date: ' + selectedDate.toISOString());
+            console.log('Doctor: ' + doctorName);
+            console.log('Location: ' + location);
+            console.log('Room Number: ' + roomNumber);
+            console.log('Additional Info: ' + additionalInfo);
+            console.log('Appointment Time: ' + selectedTime);
+
             getUpcomingAppointments();
             resetForm();
           } else {
-            console.error('Dodawanie wizyty do bazy danych nie powiodło się');
+            console.error('Adding appointment to the database failed');
           }
         },
         (error) => {
-          console.error('Błąd SQL podczas wstawiania wizyty:', error);
+          console.error('SQL error while inserting appointment:', error);
         }
       );
     });
   };
 
-
-
-  const handleDocumentSelection = useCallback(async () => {
-    try {
-      const response = await DocumentPicker.pickSingle({
-        type: [DocumentPicker.types.pdf], mode : 'import', copyTo: 'documentDirectory',
+  const getUpcomingAppointments = () => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        'SELECT * FROM appointments ORDER BY date',
+        [],
+        (tx, results) => {
+          const appointmentsData = [];
+          for (let i = 0; i < results.rows.length; i++) {
+            appointmentsData.push(results.rows.item(i));
+          }
+          setAppointments(appointmentsData);
+        }
+      );
     });
-      setFileResponse(response);
-
-      console.log(response);
-      console.log(response.uri);
-      console.log(response.fileCopyUri);
-     setSelectedPdfurl(response.fileCopyUri); // Ustaw selectedPdfurl na URL wybranego pliku PDF
-      
-    } catch (err) {
-      console.warn(err);
-    }
-  }, []);
-
-
-  
-
-
-
-
-  const openFile = (fileUrl) => {
-    FileViewer.open(fileUrl) // Otwórz plik PDF
-      .then(() => {
-        console.log('Plik PDF został otwarty.');
-      })
-      .catch((error) => {
-        console.error('Błąd podczas otwierania pliku PDF:', error);
-      });
   };
-
-
-
-
-
-
-
-
-
-  
 
   const deleteAppointment = (id) => {
     db.transaction((tx) => {
@@ -153,54 +120,11 @@ const Appointments = () => {
         'DELETE FROM appointments WHERE id = ?',
         [id],
         (tx, results) => {
-          if (results.rowsAffected > 0) {
-            console.log('Wizyta została usunięta z bazy danych');
-            getUpcomingAppointments();
-          } else {
-            console.log('Usunięcie wizyty nie powiodło się');
-          }
+          console.log('Appointment deleted from the database.');
+          getUpcomingAppointments();
         },
         (error) => {
-          console.error('Błąd SQL podczas usuwania wizyty:', error);
-        }
-      );
-    });
-  };
-
-  const getUpcomingAppointments = () => {
-    const currentDate = new Date();
-    const nextWeekDate = new Date();
-    nextWeekDate.setDate(currentDate.getDate() + 7);
-    const nextMonthDate = new Date();
-    nextMonthDate.setMonth(currentDate.getMonth() + 1);
-
-    db.transaction((tx) => {
-      tx.executeSql(
-        'SELECT * FROM appointments',
-        [],
-        (tx, results) => {
-          const allAppointments = [];
-          for (let i = 0; i < results.rows.length; i++) {
-            const appointment = results.rows.item(i);
-            allAppointments.push(appointment);
-          }
-
-          const nearest7Days = allAppointments.filter((appointment) =>
-            new Date(appointment.date) <= nextWeekDate
-          );
-          const nearestMonth = allAppointments.filter((appointment) =>
-            new Date(appointment.date) > nextWeekDate &&
-            new Date(appointment.date) <= nextMonthDate
-          );
-          const further = allAppointments.filter((appointment) =>
-            new Date(appointment.date) > nextMonthDate
-          );
-
-          setAppointments({
-            nearest7Days: nearest7Days.sort((a, b) => new Date(a.date) - new Date(b.date)),
-            nearestMonth: nearestMonth.sort((a, b) => new Date(a.date) - new Date(b.date)),
-            further: further.sort((a, b) => new Date(a.date) - new Date(b.date)),
-          });
+          console.error('SQL error while deleting appointment:', error);
         }
       );
     });
@@ -212,111 +136,108 @@ const Appointments = () => {
     setRoomNumber('');
     setAdditionalInfo('');
     setSelectedTime('');
-    setSelectedPdfurl('');
   };
 
   const handleTimeChange = (event, selected) => {
     setShowTimePicker(Platform.OS === 'ios');
     if (selected) {
-      const hours = selected.getHours().toLocaleString('en-US', { minimumIntegerDigits: 2 });
-      const minutes = selected.getMinutes().toLocaleString('en-US', { minimumIntegerDigits: 2 });
+      const hours = selected.getHours().toString().padStart(2, '0');
+      const minutes = selected.getMinutes().toString().padStart(2, '0');
       const formattedTime = `${hours}:${minutes}`;
       setSelectedTime(formattedTime);
     }
   };
 
   const renderAppointments = () => {
+    const currentDate = new Date();
+    const upcomingAppointments = appointments.filter(appointmentDate => new Date(appointmentDate.date) >= currentDate);
+    const oneWeekFromNow = new Date(currentDate);
+    oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+    const oneMonthFromNow = new Date(currentDate);
+    oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+  
+    const upcomingAppointmentsThisWeek = upcomingAppointments.filter(appointmentDate => {
+      return new Date(appointmentDate.date) >= currentDate && new Date(appointmentDate.date) < oneWeekFromNow;
+    });
+  
+    const upcomingAppointmentsThisMonth = upcomingAppointments.filter(appointmentDate => {
+      return new Date(appointmentDate.date) >= oneWeekFromNow && new Date(appointmentDate.date) < oneMonthFromNow;
+    });
+  
+    const upcomingAppointmentsLater = upcomingAppointments.filter(appointmentDate => {
+      return new Date(appointmentDate.date) >= oneMonthFromNow;
+    });
+  
     return (
       <ScrollView style={styles.scrollView}>
-        <Text>Najbliższe 7 dni</Text>
-        {renderAppointmentsSection(appointments.nearest7Days)}
-
-        <Text>Najbliższy miesiąc</Text>
-        {renderAppointmentsSection(appointments.nearestMonth)}
-
-        <Text>Dalsze</Text>
-        {renderAppointmentsSection(appointments.further)}
+        <Section title="Najbliższy Tydzień" data={upcomingAppointmentsThisWeek} />
+        <Section title="Najbliższy Miesiąc" data={upcomingAppointmentsThisMonth} />
+        <Section title="Późniejsze" data={upcomingAppointmentsLater} />
       </ScrollView>
     );
   };
-
-  const renderAppointmentsSection = (sectionAppointments) => {
+  
+  
+  const Section = ({ title, data }) => {
     return (
       <View>
-        {sectionAppointments && sectionAppointments.length > 0 && sectionAppointments.map((appointment) => (
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {data.map((appointment) => (
           <View key={appointment.id} style={styles.appointmentItem}>
-            <Text>Data wizyty: {appointment.date}</Text>
+            <Text>Data wizyty: {new Date(appointment.date).toLocaleDateString()}</Text>
             <Text>Lekarz: {appointment.doctor_name}</Text>
             <Text>Lokalizacja: {appointment.location}</Text>
             <Text>Numer gabinetu/pokoju: {appointment.room_number}</Text>
             <Text>Informacje dodatkowe: {appointment.additional_info}</Text>
             <Text>Godzina wizyty: {appointment.appointment_time}</Text>
-            <Text>Pliki: {appointment.files}</Text>
-            
-            <TouchableOpacity onPress={() => openFile("///data/user/0/com.projekt/files/d688c8b5-f488-4760-9236-1fca810c1c5d/sample.pdf")}>
-              <Text style={styles.openPdfButton}>Otwórz Plik </Text>
-            </TouchableOpacity>
-
-                              {isFileViewerVisible && (
-                    <View style={styles.fileViewerContainer}>
-                      <FileViewer
-                        fileType="pdf" // Specify the file type if necessary (e.g., 'pdf', 'docx', 'xlsx')
-                        filePath={appointment.files}
-                        onError={(e) => console.log('Error:', e)}
-                        
-                      />
-                      <TouchableOpacity
-                        style={styles.closeFileButton}
-                        onPress={() => setIsFileViewerVisible(false)}
-                      >
-                        <Text style={styles.closeFileButtonText}>Close File</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-              <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => deleteAppointment(appointment.id)}
-              >
-              <Text style={styles.deleteButtonText}>Usuń wizytę</Text>
-            </TouchableOpacity>
+  
+            <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => deleteAppointment(appointment.id)}
+          >
+            <Image
+              source={require('./assets/trash.png')} // Zaktualizuj ścieżkę do swojego pliku PNG
+              style={styles.iconKosza} 
+            />
+          </TouchableOpacity>
           </View>
         ))}
       </View>
     );
   };
+  
 
   const renderAddAppointmentForm = () => {
     return (
       <ScrollView style={styles.formContainer}>
-        <Text style={styles.formTitle}>Dodaj nową wizytę</Text>
+        <Text style={styles.formTitle}>Add New Appointment</Text>
         <TextInput
           style={styles.input}
-          placeholder="Imię i nazwisko lekarza"
+          placeholder="Doctor's Name"
           value={doctorName}
           onChangeText={(text) => setDoctorName(text)}
         />
         <TextInput
           style={styles.input}
-          placeholder="Lokalizacja"
+          placeholder="Location"
           value={location}
           onChangeText={(text) => setLocation(text)}
         />
         <TextInput
           style={styles.input}
-          placeholder="Numer gabinetu/pokoju"
+          placeholder="Room Number"
           value={roomNumber}
           onChangeText={(text) => setRoomNumber(text)}
         />
         <TextInput
           style={styles.input}
-          placeholder="Informacje dodatkowe"
+          placeholder="Additional Info"
           value={additionalInfo}
           onChangeText={(text) => setAdditionalInfo(text)}
         />
 
         <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-          <Text style={styles.timePickerButton}>Wybierz godzinę wizyty</Text>
+          <Text style={styles.timePickerButton}>Select Appointment Time</Text>
         </TouchableOpacity>
         {showTimePicker && (
           <DateTimePicker
@@ -327,9 +248,9 @@ const Appointments = () => {
             onChange={handleTimeChange}
           />
         )}
-        <Text style={styles.input}>Wybrana godzina: {selectedTime}</Text>
+        <Text style={styles.input}>Selected Time: {selectedTime}</Text>
 
-        <Text>Wybierz datę wizyty</Text>
+        <Text>Select Appointment Date</Text>
         <Calendar
           current={selectedDate.toISOString().split('T')[0]}
           onDayPress={(day) => setSelectedDate(new Date(day.timestamp))}
@@ -345,23 +266,8 @@ const Appointments = () => {
           }}
         />
 
-        <SafeAreaView style={styles.container} >
-          <StatusBar barStyle={'dark-content'} />
-          {/* {fileResponse.map((file, index) => (
-            <Text
-              key={index.toString()}
-              style={styles.uri}
-              numberOfLines={1}
-              ellipsizeMode={'middle'}>
-              {file?.uri}
-            </Text>
-          ))} */}
-          <Button title="Select 📑" onPress={handleDocumentSelection} />
-        </SafeAreaView>
-
-
         <TouchableOpacity style={styles.addButton} onPress={() => insertAppointment()}>
-          <Text style={styles.addButtonText}>Dodaj wizytę</Text>
+          <Text style={styles.addButtonText}>Add Appointment</Text>
         </TouchableOpacity>
       </ScrollView>
     );
@@ -394,7 +300,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 10,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 13,
   },
   formTitle: {
     fontSize: 20,
@@ -421,6 +327,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'blue',
     padding: 10,
     borderRadius: 5,
+    margin: 20,
   },
   addButtonText: {
     color: 'white',
@@ -437,17 +344,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: 'white',
     borderRadius: 5,
-  },
-  deleteButton: {
-    backgroundColor: 'red',
-    padding: 5,
-    borderRadius: 5,
-    marginTop: 5,
-  },
-  deleteButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -466,26 +362,44 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  pickPdfButton: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
+  selectedImage: {
+    width: 100,
+    height: 100,
     marginBottom: 10,
-    textAlign: 'center',
-    color: 'blue',
   },
-  openPdfButton: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
+  appointmentImage: {
+    width: 100,
+    height: 100,
     marginBottom: 10,
-    textAlign: 'center',
-    color: 'blue',
   },
-  
-  
+  modalContainer: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 10,
+  },
+  closeModalButton: {
+    backgroundColor: 'gray',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  closeModalText: {
+    color: 'white',
+  },
+  imageContainer: {
+    flexDirection: 'row',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: '75%',
+  },
+  iconKosza: {
+    width: 70, // Dostosuj szerokość ikony kosza do własnych potrzeb
+    height: 70, // Dostosuj wysokość ikony kosza do własnych potrzeb
+    resizeMode: 'contain', // Zachowuje proporcje i skaluje do określonych wymiarów
+    marginLeft: 5, // Odstęp między ikoną a tekstem
+  },
 });
 
 export default Appointments;

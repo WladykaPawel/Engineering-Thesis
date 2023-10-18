@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
-    backgroundColor: '#3ba118',
+    backgroundColor: '#9dfbb2',
   },
   title: {
     fontSize: 24,
@@ -488,11 +488,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 10,
     marginTop: 10,
-    backgroundColor: '#9dfbb2',
+    backgroundColor: '9dfbb2',
   },
   filing_place: {
     width: '100%',
-    backgroundColor: '#9dfbb2',
     marginBottom: 10,
   },
   TimeButtons:
