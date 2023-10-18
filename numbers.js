@@ -9,6 +9,8 @@ const firefighting = '998';
 const emergency = '999';
 const GOPR = '601-100-300';
 const WOPR = '601-100-100';
+const TIP = '800-190-590';
+const TPK = '800-137-200';
 
 
 const Numbers = () => {
@@ -33,13 +35,67 @@ const Numbers = () => {
       </View>
       <View style={styles.textcontainer}>
       <Text style={styles.text}>
-        Numer 112 to europejski numer alarmowy,
-        który umożliwia szybkie wezwanie pomocy w
-        przypadku zagrożenia życia lub zdrowia. W
-        wielu krajach jest dostępny jako bezpłatny
-        numer alarmowy, który można wywołać z
-        każdego telefonu komórkowego...</Text>
+        Numer alarmowy 112 wybieraj w sytuacjach alarmowych, w których niezbędna jest pomoc Policji, Państwowej Straży Pożarnej lub pogotowia
+        ratunkowego i gdy wymagane są natychmiastowe działania tych służb.</Text>
       </View>
+
+      <View style={styles.buttoncontainer} >
+        <View style={styles.phonecontainer}>
+          <Text style={styles.title}>Pogotowie Ratunkowe</Text>
+          <Text style={styles.title}>{emergency}</Text>
+        </View>
+        <TouchableOpacity onPress={() => handleCall(emergency)}>
+          <Image
+            source={require('./assets/phoneimg.png')}
+            style={styles.image}
+            resizeMode="contain"
+          />
+          </TouchableOpacity>
+      </View>
+      <View style={styles.textcontainer}>
+      <Text style={styles.text}>
+        Numer Pogotowia Ratunkowego wybieraj w sytuacjach alarmowych, w których niezbędna 
+        jest pomoc pogotowia ratunkowego i wymagane jest natychmiastowe działanie tych służb. </Text>
+      </View>
+
+      <View style={styles.buttoncontainer} >
+        <View style={styles.phonecontainer}>
+          <Text style={styles.title}>Telefoniczna Informacja Pacjenta</Text>
+          <Text style={styles.title}>{TIP}</Text>
+        </View>
+        <TouchableOpacity onPress={() => handleCall(TIP)}>
+          <Image
+            source={require('./assets/phoneimg.png')}
+            style={styles.image}
+            resizeMode="contain"
+          />
+          </TouchableOpacity>
+      </View>
+      <View style={styles.textcontainer}>
+      <Text style={styles.text}>
+        Dzwoniąc pod bezpłatny numer TIP - 800 190 590 - uzyskasz szybką i kompleksową informację dotyczącą praw pacjenta 
+        oraz funkcjonowania systemu 
+        ochrony zdrowia w Polsce</Text>
+      </View>
+
+      <View style={styles.buttoncontainer} >
+        <View style={styles.phonecontainer}>
+          <Text style={styles.title}>Teleplatforma Pierwszego Kontaktu</Text>
+          <Text style={styles.title}>{TPK}</Text>
+        </View>
+        <TouchableOpacity onPress={() => handleCall(TPK)}>
+          <Image
+            source={require('./assets/phoneimg.png')}
+            style={styles.image}
+            resizeMode="contain"
+          />
+          </TouchableOpacity>
+      </View>
+      <View style={styles.textcontainer}>
+      <Text style={styles.text}>
+        Dzwoniąc pod bezpłatny numer TPK - 800 137 200 - otrzymasz niezbędną pomoc medyczną poza godzinami pracy lekarzy rodzinnych, w weekendy oraz święta</Text>
+      </View>
+
 
       <View style={styles.buttoncontainer} >
         <View style={styles.phonecontainer}>
@@ -56,13 +112,29 @@ const Numbers = () => {
       </View>
       <View style={styles.textcontainer}>
       <Text style={styles.text}>
-        Numer 112 to europejski numer alarmowy,
-        który umożliwia szybkie wezwanie pomocy w
-        przypadku zagrożenia życia lub zdrowia. W
-        wielu krajach jest dostępny jako bezpłatny
-        numer alarmowy, który można wywołać z
-        każdego telefonu komórkowego...</Text>
+      Gdy zachodzi potrzeba interwencji policyjnej w sytuacjach związanych z przestępstwem, 
+      awanturą lub innymi pilnymi incydentami, skontaktuj się z lokalnym numerem alarmowym Policji: 997.</Text>
       </View>
+
+      <View style={styles.buttoncontainer} >
+        <View style={styles.phonecontainer}>
+          <Text style={styles.title}>Straż Pożarna</Text>
+          <Text style={styles.title}>{firefighting}</Text>
+        </View>
+        <TouchableOpacity onPress={() => handleCall(firefighting)}>
+          <Image
+            source={require('./assets/phoneimg.png')}
+            style={styles.image}
+            resizeMode="contain"
+          />
+          </TouchableOpacity>
+      </View>
+      <View style={styles.textcontainer}>
+      <Text style={styles.text}>
+      W przypadku zagrożenia pożarem, wybuchu lub innego niebezpiecznego zdarzenia związanego z ogniem, 
+      zadzwoń na numer alarmowy Straży Pożarnej, który wynosi 998.</Text>
+      </View>
+
 
       <View style={styles.buttoncontainer} >
         <View style={styles.phonecontainer}>
@@ -79,12 +151,9 @@ const Numbers = () => {
       </View>
       <View style={styles.textcontainer}>
       <Text style={styles.text}>
-        Numer 112 to europejski numer alarmowy,
-        który umożliwia szybkie wezwanie pomocy w
-        przypadku zagrożenia życia lub zdrowia. W
-        wielu krajach jest dostępny jako bezpłatny
-        numer alarmowy, który można wywołać z
-        każdego telefonu komórkowego...</Text>
+      W obszarach górskich, w przypadku wypadków w trudno dostępnych terenach, skorzystaj z numeru alarmowego GOPR, 
+      który jest dostępny pod numerem 601-100-300. Opisz dokładnie sytuację oraz swoją lokalizację, 
+      aby ekipa GOPR mogła udzielić pomocy w terenie.</Text>
       </View>
 
       <View style={styles.buttoncontainer} >
@@ -102,12 +171,9 @@ const Numbers = () => {
       </View>
       <View style={styles.textcontainer}>
       <Text style={styles.text}>
-        Numer 112 to europejski numer alarmowy,
-        który umożliwia szybkie wezwanie pomocy w
-        przypadku zagrożenia życia lub zdrowia. W
-        wielu krajach jest dostępny jako bezpłatny
-        numer alarmowy, który można wywołać z
-        każdego telefonu komórkowego...</Text>
+      Podczas incydentów związanych z tonięciem, utonięciami lub innymi sytuacjami nad wodą, zadzwoń na numer alarmowy WOPR, 
+      który jest dostępny pod numerem  601-100-100. 
+      Szybko przekazaj informacje dotyczące lokalizacji i rodzaju zagrożenia, aby WOPR mogło skierować odpowiednie siły na ratunek. </Text>
       </View>
       
     </ScrollView >
@@ -123,14 +189,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    color: '#000000'
+    color: '#000000',
+    maxWidth: 300,
   },
   buttoncontainer: {
     fontSize: 24,
     fontWeight: 'bold',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#3ba118',
+    backgroundColor: '#9dfbb2',
     width: '100%', 
     padding: 20,
   },
@@ -144,7 +211,7 @@ const styles = StyleSheet.create({
     margin: 3,
   },
   textcontainer: {
-    backgroundColor: '#9fffc7',
+    backgroundColor: '#ffffff',
     margin: 0,
     width: '100%', 
     padding: 20,

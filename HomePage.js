@@ -36,7 +36,7 @@ const MainScreen = ({ navigation }) => {
           resizeMode="cover" // Możesz dostosować sposób wyświetlania obrazu
       > */}
         
-      <Text style={styles.name}>E<Text style={styles.name2}>Zdrowie</Text></Text>
+      <Text style={styles.name}>e<Text style={styles.name2}>Zdrowie</Text></Text>
       <View style={styles.container2} >
         <TouchableOpacity style={styles.button_cont} onPress={openNumbers}>
           <Image
