@@ -26,7 +26,7 @@ const MainScreen = ({ navigation }) => {
   return (
     <View style={styles.container} >
       <LinearGradient
-        colors={['#9dfbb2', '#7ad98f', '#9dfbb2', '#7ad98f']}
+        colors={['#00ab99', '#008577', '#00ab99','#008577']}
         locations={[0.4, 0.6, 0.70, 0.9]}
         style={styles.background}
       >
@@ -124,8 +124,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   name: {
-    fontSize: 56,
-    fontFamily: 'Inter',
+    fontSize: 72,
+    fontFamily: 'Brush Script MT',
     fontWeight: '400',
     color: '#33a34b',
     textAlign: 'center',

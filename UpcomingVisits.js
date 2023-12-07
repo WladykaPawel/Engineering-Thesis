@@ -8,11 +8,12 @@ import {
   ScrollView,
   Platform,
   Image,
+  Alert
 } from 'react-native';
 import SQLite from 'react-native-sqlite-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar } from 'react-native-calendars';
-import Modal from 'react-native-modal';
+import PushNotification from 'react-native-push-notification';
 
 const Appointments = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -84,7 +85,24 @@ const Appointments = () => {
             console.log('Room Number: ' + roomNumber);
             console.log('Additional Info: ' + additionalInfo);
             console.log('Appointment Time: ' + selectedTime);
+  
+            // Calculate the notification time (1 hour before the appointment)
+            const notificationTime = new Date(selectedDate);
+            const timeParts = selectedTime.split(':');
+            notificationTime.setHours(parseInt(timeParts[0], 10));
+            notificationTime.setMinutes(parseInt(timeParts[1], 10));
+            notificationTime.setHours(notificationTime.getHours() - 1);
+  
+                PushNotification.localNotificationSchedule({
+                  channelId: 'channel-id',
+                  title: 'Przypomnienie',
+                  message: 'Za godzinę masz wizytę lekarską u lekarza: ' + doctorName,
+                  date: notificationTime,
+                  allowWhileIdle: true,
+                });
+                console.log(`Dodano powiadomienie na dzień: ${notificationTime.toISOString()}`);
 
+  
             getUpcomingAppointments();
             resetForm();
           } else {
@@ -97,6 +115,7 @@ const Appointments = () => {
       );
     });
   };
+  
 
   const getUpcomingAppointments = () => {
     db.transaction((tx) => {
@@ -130,6 +149,24 @@ const Appointments = () => {
     });
   };
 
+  const confirmDeleteAppointment = (doctorName, id) => {
+    Alert.alert(
+      'Potwierdzenie',
+      `Czy na pewno chcesz usunąć wizytę lekarską z doktorem: ${doctorName}?`,
+      [
+        {
+          text: 'Anuluj',
+          style: 'cancel',
+        },
+        {
+          text: 'Usuń',
+          onPress: () => deleteAppointment(id),
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
   const resetForm = () => {
     setDoctorName('');
     setLocation('');
@@ -150,14 +187,16 @@ const Appointments = () => {
 
   const renderAppointments = () => {
     const currentDate = new Date();
-    const upcomingAppointments = appointments.filter(appointmentDate => new Date(appointmentDate.date) >= currentDate);
+    const yesterday = new Date(currentDate);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const upcomingAppointments = appointments.filter(appointmentDate => new Date(appointmentDate.date) >= yesterday);
     const oneWeekFromNow = new Date(currentDate);
     oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
     const oneMonthFromNow = new Date(currentDate);
     oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
   
     const upcomingAppointmentsThisWeek = upcomingAppointments.filter(appointmentDate => {
-      return new Date(appointmentDate.date) >= currentDate && new Date(appointmentDate.date) < oneWeekFromNow;
+      return new Date(appointmentDate.date) >= yesterday && new Date(appointmentDate.date) < oneWeekFromNow;
     });
   
     const upcomingAppointmentsThisMonth = upcomingAppointments.filter(appointmentDate => {
@@ -193,13 +232,13 @@ const Appointments = () => {
   
             <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => deleteAppointment(appointment.id)}
-          >
-            <Image
-              source={require('./assets/trash.png')} // Zaktualizuj ścieżkę do swojego pliku PNG
-              style={styles.iconKosza} 
-            />
-          </TouchableOpacity>
+            onPress={() =>  confirmDeleteAppointment(appointment.doctor_name, appointment.id)}
+            >
+              <Image
+                source={require('./assets/trash.png')}
+                style={styles.iconKosza} 
+              />
+            </TouchableOpacity>
           </View>
         ))}
       </View>
@@ -210,34 +249,34 @@ const Appointments = () => {
   const renderAddAppointmentForm = () => {
     return (
       <ScrollView style={styles.formContainer}>
-        <Text style={styles.formTitle}>Add New Appointment</Text>
+        <Text style={styles.formTitle}>Dodawanie nowej wizyty</Text>
         <TextInput
           style={styles.input}
-          placeholder="Doctor's Name"
+          placeholder="Imię i Nazwisko Lekarza"
           value={doctorName}
           onChangeText={(text) => setDoctorName(text)}
         />
         <TextInput
           style={styles.input}
-          placeholder="Location"
+          placeholder="Miejsce wizyty"
           value={location}
           onChangeText={(text) => setLocation(text)}
         />
         <TextInput
           style={styles.input}
-          placeholder="Room Number"
+          placeholder="Numer gabinetu"
           value={roomNumber}
           onChangeText={(text) => setRoomNumber(text)}
         />
         <TextInput
           style={styles.input}
-          placeholder="Additional Info"
+          placeholder="Informacje dodatkowe"
           value={additionalInfo}
           onChangeText={(text) => setAdditionalInfo(text)}
         />
 
         <TouchableOpacity onPress={() => setShowTimePicker(true)}>
-          <Text style={styles.timePickerButton}>Select Appointment Time</Text>
+          <Text style={styles.timePickerButton}>Wybierz planowaną godzinę wizyty</Text>
         </TouchableOpacity>
         {showTimePicker && (
           <DateTimePicker
@@ -248,26 +287,26 @@ const Appointments = () => {
             onChange={handleTimeChange}
           />
         )}
-        <Text style={styles.input}>Selected Time: {selectedTime}</Text>
+        <Text style={styles.input}>Wybrana godzina wizyty: {selectedTime}</Text>
 
-        <Text>Select Appointment Date</Text>
+        <Text>Wybierz datę wizyty</Text>
         <Calendar
           current={selectedDate.toISOString().split('T')[0]}
           onDayPress={(day) => setSelectedDate(new Date(day.timestamp))}
           minDate={new Date().toISOString().split('T')[0]}
           markedDates={{
-            [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: 'blue' },
+            [selectedDate.toISOString().split('T')[0]]: { selected: true, selectedColor: '#008577' },
           }}
           theme={{
             calendarBackground: 'white',
-            textSectionTitleColor: 'blue',
-            selectedDayBackgroundColor: 'blue',
+            textSectionTitleColor: '#008577',
+            selectedDayBackgroundColor: '#008577',
             selectedDayTextColor: 'white',
           }}
         />
 
         <TouchableOpacity style={styles.addButton} onPress={() => insertAppointment()}>
-          <Text style={styles.addButtonText}>Add Appointment</Text>
+          <Text style={styles.addButtonText}>Dodaj wizytę</Text>
         </TouchableOpacity>
       </ScrollView>
     );
@@ -293,7 +332,7 @@ const Appointments = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#00ab99',
     padding: 16,
   },
   formContainer: {
@@ -321,10 +360,10 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     textAlign: 'center',
-    color: 'blue',
+    color: '#008577',
   },
   addButton: {
-    backgroundColor: 'blue',
+    backgroundColor: '#008577',
     padding: 10,
     borderRadius: 5,
     margin: 20,
@@ -395,10 +434,10 @@ const styles = StyleSheet.create({
     marginLeft: '75%',
   },
   iconKosza: {
-    width: 70, // Dostosuj szerokość ikony kosza do własnych potrzeb
-    height: 70, // Dostosuj wysokość ikony kosza do własnych potrzeb
-    resizeMode: 'contain', // Zachowuje proporcje i skaluje do określonych wymiarów
-    marginLeft: 5, // Odstęp między ikoną a tekstem
+    width: 70, 
+    height: 70, 
+    resizeMode: 'contain', 
+    marginLeft: 5,
   },
 });
 

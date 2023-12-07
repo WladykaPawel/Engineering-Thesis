@@ -3,6 +3,7 @@
  */
 
 import {AppRegistry} from 'react-native';
+import { LogBox } from 'react-native';
 // import App from './App';
 
 
@@ -11,15 +12,14 @@ import {name as appName} from './app.json';
 import PushNotification from "react-native-push-notification";
 
 
-// import { FirebaseApp, initializeApp } from 'firebase/app';
+ PushNotification.configure({
+     onNotification: function (notification) {
+         console.log("NOTIFICATION:", notification);
+       },
+       requestPermissions: Platform.OS === 'ios'
+ });
 
-// FirebaseApp.initializeApp();
-
-// PushNotification.configure({
-//     onNotification: function (notification) {
-//         console.log("NOTIFICATION:", notification);
-//         PushNotification.requestPermissions();
-//       },
-// });
 
 AppRegistry.registerComponent(appName, () => App);
+
+LogBox.ignoreLogs(['Remote debugger']);

@@ -6,12 +6,17 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  Modal,
+  Dimensions,
+  Button
 } from 'react-native';
 import SQLite from 'react-native-sqlite-storage';
-import { launchImageLibrary } from 'react-native-image-picker';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+import ImageZoom from 'react-native-image-pan-zoom';
 
 const History = () => {
   const [appointments, setAppointments] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   const db = SQLite.openDatabase({ name: 'appointments.db', location: 'default' });
 
@@ -30,10 +35,14 @@ const History = () => {
   }, []);
 
   const getAppointments = () => {
+    const today= new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const tomorrowString = tomorrow.toISOString().slice(0, 10);
     db.transaction((tx) => {
       tx.executeSql(
-        'SELECT appointments.*, appointment_images.image_uri FROM appointments LEFT JOIN appointment_images ON appointments.id = appointment_images.appointment_id',
-        [],
+        'SELECT appointments.*, appointment_images.image_uri FROM appointments LEFT JOIN appointment_images ON appointments.id = appointment_images.appointment_id WHERE date <= ? ORDER BY date DESC ',
+      [tomorrowString],
         (tx, results) => {
           const appointmentsWithImages = [];
           let currentAppointment = null;
@@ -107,23 +116,65 @@ const History = () => {
       }
     );
   };
+  
+  
+  const deleteAppointment = (id) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        'DELETE FROM appointments WHERE id = ?',
+        [id],
+        (tx, results) => {
+          console.log('Appointment deleted from the database.');
+          getUpcomingAppointments();
+        },
+        (error) => {
+          console.error('SQL error while deleting appointment:', error);
+        }
+      );
+    });
+  };
+
+
+  const openImageModal = (imageUri) => {
+    setSelectedImage(imageUri);
+  };
+
+  const closeImageModal = () => {
+    setSelectedImage(null);
+  };
 
   const renderAppointments = () => {
+    if (appointments.length === 0) {
+      return <Text>Brak przeszłych wizyt</Text>;
+    }
     return (
       <ScrollView style={styles.scrollView}>
         {appointments.map((appointment) => (
           <View key={appointment.id} style={styles.appointmentItem}>
-            <Text>Data wizyty: {appointment.date}</Text>
+            <Text>Data wizyty: {new Date(appointment.date).toLocaleDateString()}</Text>
             <Text>Lekarz: {appointment.doctor_name}</Text>
             <Text>Lokalizacja: {appointment.location}</Text>
             <Text>Numer gabinetu/pokoju: {appointment.room_number}</Text>
             <Text>Informacje dodatkowe: {appointment.additional_info}</Text>
             <Text>Godzina wizyty: {appointment.appointment_time}</Text>
 
+            {/* <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => deleteAppointment(appointment.id)}
+            >
+              <Image
+                source={require('./assets/trash.png')}
+                style={styles.iconKosza} 
+              />
+            </TouchableOpacity> */}
+
             <View style={styles.imageContainer}>
               {appointment.images.map((imageUri, index) => (
                 <View key={index}>
-                  <Image source={{ uri: imageUri }} style={styles.appointmentImage} />
+                  <TouchableOpacity key={index} onPress={() => openImageModal(imageUri)}>
+                   <Image source={{ uri: imageUri }} style={styles.appointmentImage} />
+                  </TouchableOpacity>
+
                   <TouchableOpacity
                     style={styles.deleteButton}
                     onPress={() => deleteImage(appointment.id, imageUri)}
@@ -146,6 +197,21 @@ const History = () => {
   return (
     <View style={styles.container}>
       {renderAppointments()}
+      <Modal visible={selectedImage !== null} transparent={true}>
+          <View style={styles.modalContainer}>
+            <ImageZoom
+              cropWidth={Dimensions.get('window').width}
+              cropHeight={Dimensions.get('window').height}
+              imageWidth={Dimensions.get('window').width-20}
+              imageHeight={Dimensions.get('window').height-100}
+            >
+              <Image source={{ uri: selectedImage }} style={styles.modalImage} />
+            </ImageZoom>
+            <TouchableOpacity style={styles.closeButton} onPress={closeImageModal}>
+              <Text style={styles.closeButtonText}>Zamknij</Text>
+            </TouchableOpacity>
+          </View>
+      </Modal>
     </View>
   );
 };
@@ -153,7 +219,7 @@ const History = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#00ab99',
     padding: 16,
   },
   scrollView: {
@@ -177,7 +243,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   addButton: {
-    backgroundColor: 'blue',
+    backgroundColor: '#008577',
     padding: 10,
     borderRadius: 5,
     marginTop: 10,
@@ -188,7 +254,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   deleteButton: {
-    backgroundColor: 'red',
+    backgroundColor: '#005249',
     padding: 5,
     borderRadius: 5,
     marginTop: 5,
@@ -197,6 +263,28 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImage: {
+    flex: 1,
+
+  },
+  closeButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
+    position: 'absolute',
+    top: 20,
+    right: 20,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 
