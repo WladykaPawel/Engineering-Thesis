@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Image} from 'react-native';
+import { View, Text, StyleSheet, FlatList, ScrollView, TextInput, TouchableOpacity, Image, Alert} from 'react-native';
 import SQLite from 'react-native-sqlite-storage';
-
 
 const Prevention = () => {
   const [weight, setWeight] = useState('');
@@ -11,7 +10,7 @@ const Prevention = () => {
   const [waga, setWaga] = useState('');
   const [tetno, setTetno] = useState('');
   const [temperatura, setTemperatura] = useState('');
-
+  const [userRecords, setUserRecords] = useState([]);
 
   const db = SQLite.openDatabase({ name: 'UserInfo.db', location: 'default' });
 
@@ -28,8 +27,68 @@ const Prevention = () => {
         }
       );
     });
+
+    fetchUserRecords();
   }, []);
 
+  const fetchUserRecords = () => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        'SELECT * FROM UserInfo ORDER BY znacznikCzasu DESC',
+        [],
+        (tx, results) => {
+          const len = results.rows.length;
+          const records = [];
+          for (let i = 0; i < len; i++) {
+            records.push(results.rows.item(i));
+          }
+          setUserRecords(records);
+        },
+        (error) => {
+          console.error('Błąd podczas pobierania danych użytkownika:', error);
+        }
+      );
+    });
+  };
+  
+  const confirmDeleteInfo = (id) => {
+    Alert.alert(
+      'Potwierdzenie',
+      `Czy na pewno chcesz usunąć wpis?`,
+      [
+        {
+          text: 'Anuluj',
+          style: 'cancel',
+        },
+        {
+          text: 'Usuń',
+          onPress: () => DeleteInfo(id),
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
+
+  const DeleteInfo = (id) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        'DELETE FROM UserInfo WHERE id = ?',
+        [id],
+        (tx, results) => {
+          if (results.rowsAffected > 0) {
+            console.log('informacja została usunięta z bazy danych');
+            fetchUserRecords();
+          } else {
+            console.log('Usunięcie informacji nie powiodło się');
+          }
+        },
+        (error) => {
+          console.error('Błąd SQL podczas usuwania informacji:', error);
+        }
+      );
+    });
+  };
 
   const calculateBMI = () => {
     if (weight && height) {
@@ -63,23 +122,26 @@ const Prevention = () => {
 
 
   const SafeToDatabase = () => {
-      db.transaction((tx) => {
-        tx.executeSql(
-          'INSERT INTO daneZdrowotne (waga, tetno, temperatura, znacznikCzasu) VALUES (?, ?, ?, ?)',
-          [waga, tetno, temperatura, new Date().toISOString()],
-          (tx, results) => {
-            if (results.rowsAffected > 0) {
-              console.log('Dane zdrowotne zostały zapisane do bazy danych');
-            } else {
-              console.log('Nie udało się zapisać danych zdrowotnych do bazy danych');
-            }
-          },
-          (error) => {
-            console.error('Błąd wykonania zapytania SQL:', error);
+    db.transaction((tx) => {
+      tx.executeSql(
+        'INSERT INTO UserInfo (waga, tetno, temperatura, znacznikCzasu) VALUES (?, ?, ?, ?)',
+        [waga, tetno, temperatura, new Date().toISOString()],
+        (tx, results) => {
+          if (results.rowsAffected > 0) {
+            console.log('Dane zdrowotne zostały zapisane do bazy danych');
+            // After successfully saving data, fetch and update user records
+            fetchUserRecords();
+          } else {
+            console.log('Nie udało się zapisać danych zdrowotnych do bazy danych');
           }
-        );
-      });
+        },
+        (error) => {
+          console.error('Błąd wykonania zapytania SQL:', error);
+        }
+      );
+    });
   };
+  
   
 
   const renderInfo = () => {
@@ -163,7 +225,28 @@ const Prevention = () => {
         <TouchableOpacity onPress={SafeToDatabase}>
          <Text style={styles.calculateButton}>Zapisz Dane Zdrowotne</Text>
         </TouchableOpacity>
-      </ScrollView>
+
+      <Text style={styles.title}>Historia Danych Zdrowotnych</Text>
+
+      {userRecords.map((item) => (
+              <View key={item.id} style={styles.textcontainer}>
+                <Text style={styles.content}>Data i czas pomiaru: {new Date(item.znacznikCzasu).toLocaleString()}</Text>
+                <Text style={styles.content}>Waga (kg): {item.waga}</Text>
+                <Text style={styles.content}>Tętno: {item.tetno}</Text>
+                <Text style={styles.content}>Temperatura: {item.temperatura}</Text>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => confirmDeleteInfo(item.id)}
+                >
+                  <Image
+                    source={require('./assets/trash.png')}
+                    style={styles.iconKosza}
+                  />
+                </TouchableOpacity>
+              </View>
+              
+            ))}
+    </ScrollView>
     );
   };
   

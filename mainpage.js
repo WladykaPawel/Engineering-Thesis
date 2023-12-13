@@ -1,4 +1,5 @@
 import React from 'react';
+import {Text} from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import MainScreen from './HomePage'; // Importujemy ekran główny
@@ -17,6 +18,7 @@ const Stack = createStackNavigator();
 const App = () => {
   return (
     <NavigationContainer>
+
       <Stack.Navigator>
         <Stack.Screen name="MainScreen" component={MainScreen} />
         <Stack.Screen name="Numbers" component={Numbers} />
