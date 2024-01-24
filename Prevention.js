@@ -112,7 +112,7 @@ const Prevention = () => {
       }  else if (bmi >= 30 && bmi < 34.9) {
         return 'Otyłość';
       }  else {
-        return 'O ty otyły pasztecie! Tłuszcz się z ciebie wylewa!!';
+        return 'Otyłość II stopnia';
       }
     }
     return '';
@@ -129,7 +129,6 @@ const Prevention = () => {
         (tx, results) => {
           if (results.rowsAffected > 0) {
             console.log('Dane zdrowotne zostały zapisane do bazy danych');
-            // After successfully saving data, fetch and update user records
             fetchUserRecords();
           } else {
             console.log('Nie udało się zapisać danych zdrowotnych do bazy danych');
@@ -275,10 +274,6 @@ const Prevention = () => {
               </TouchableOpacity>
               {bmi && <Text style={styles.result}>Twoje BMI: {bmi}</Text>}
               {bmi && <Text style={styles.result}>Stan zdrowia: {healthStatus}</Text>}
-              {/* <Image
-                          source={require('./assets/tabelabmi.png')}
-                          style={styles.image}
-                        /> */}
             </View>
       </ScrollView>
     );

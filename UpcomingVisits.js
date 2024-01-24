@@ -30,6 +30,8 @@ const Appointments = () => {
   const db = SQLite.openDatabase({ name: 'appointments.db', location: 'default' });
 
   useEffect(() => {
+
+
     db.transaction((tx) => {
       // Create the "appointments" table
       tx.executeSql(
@@ -78,6 +80,17 @@ const Appointments = () => {
         [selectedDate.toISOString(), doctorName, location, roomNumber, additionalInfo, selectedTime],
         (tx, results) => {
           if (results.rowsAffected > 0) {
+            Alert.alert(
+              'Potwierdzenie',
+              'Wpis został wprowadzony',
+              [
+                {
+                  text: 'OK',
+                  onPress: () => console.log('OK Pressed'),
+                },
+              ],
+              { cancelable: false }
+            );
             console.log('Appointment added to the database. Details:');
             console.log('Date: ' + selectedDate.toISOString());
             console.log('Doctor: ' + doctorName);

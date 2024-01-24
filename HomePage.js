@@ -30,19 +30,14 @@ const MainScreen = ({ navigation }) => {
         locations={[0.4, 0.6, 0.70, 0.9]}
         style={styles.background}
       >
-      {/* <ImageBackground
-          source={require('./assets/backnew.png')} // Ścieżka do obrazu
-          style={styles.background}
-          resizeMode="cover" // Możesz dostosować sposób wyświetlania obrazu
-      > */}
         
       <Text style={styles.name}>e<Text style={styles.name2}>Zdrowie</Text></Text>
       <View style={styles.container2} >
         <TouchableOpacity style={styles.button_cont} onPress={openNumbers}>
           <Image
-            source={require('./assets/phone.png')} // Ścieżka do obrazu
+            source={require('./assets/phone.png')}
             style={styles.image}
-            resizeMode="contain" // Możesz dostosować sposób wyświetlania obrazu
+            resizeMode="contain"
           />
           <Text style={styles.title}>WAŻNE NUMERY</Text>
         </TouchableOpacity>
@@ -110,13 +105,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     margin: 15,
-    // backgroundColor: 'red',
   },
   button_cont:{
     height: 100,
     flex: 1,
     alignItems: 'center',
-    // backgroundColor: 'green',
   },
   background: {
     width: '100%',
@@ -130,9 +123,9 @@ const styles = StyleSheet.create({
     color: '#33a34b',
     textAlign: 'center',
     paddingTop: 70,
-    textShadowColor: 'black', // Kolor obramowania (czarny)
-    textShadowOffset: { width: 1, height: 1 }, // Szerokość obramowania
-    textShadowRadius: 2, // Rozmycie obramowania
+    textShadowColor: 'black',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
    },
   title: {
     fontSize: 12,

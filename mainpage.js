@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {Text} from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import MainScreen from './HomePage'; // Importujemy ekran główny
-import Numbers from './numbers'; // Importujemy podstronę
+import MainScreen from './HomePage'; 
+import Numbers from './numbers'; 
 import FirstAid from './FirstAid.js'; 
 import Medicines from './Medicines.js'; 
 import History from './History.js'; 
 import UpcomingVisits from './UpcomingVisits.js'; 
 import Prevention from './Prevention.js'; 
+import PushNotification from 'react-native-push-notification';
 
 
 
@@ -16,6 +17,19 @@ import Prevention from './Prevention.js';
 const Stack = createStackNavigator();
 
 const App = () => {
+  useEffect (() => {
+    PushNotification.createChannel(
+      {
+        channelId: "channel-id",
+        channelName: "My channel", 
+        playSound: true,
+        soundName: "alarm",
+        vibrate: true,
+      },
+      (created) => console.log(`createChannel returned '${created}'`) 
+    )
+  },[]
+  )
   return (
     <NavigationContainer>
 

@@ -157,17 +157,6 @@ const History = () => {
             <Text>Numer gabinetu/pokoju: {appointment.room_number}</Text>
             <Text>Informacje dodatkowe: {appointment.additional_info}</Text>
             <Text>Godzina wizyty: {appointment.appointment_time}</Text>
-
-            {/* <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => deleteAppointment(appointment.id)}
-            >
-              <Image
-                source={require('./assets/trash.png')}
-                style={styles.iconKosza} 
-              />
-            </TouchableOpacity> */}
-
             <View style={styles.imageContainer}>
               {appointment.images.map((imageUri, index) => (
                 <View key={index}>

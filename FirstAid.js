@@ -17,6 +17,7 @@ const db = SQLite.openDatabase(
   }
 );
 
+//tworzenie tabeli
 const createTables = () => {
   db.transaction((tx) => {
     tx.executeSql(
@@ -103,11 +104,135 @@ const createTables = () => {
               );
               tx.executeSql(
                 'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
-                [1, 'Zaczekaj na przyjazd pogotowia', 'Opis przykładowego kroku 2']
+                [1, 'Zaczekaj na przyjazd pogotowia', 'Zachowaj spokój i zaczekaj na przybycie służb medycznych.']
+              );
+
+              // Dodawanie kroków dla kategorii "Pozycja boczna ustalona"
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [2, 'Ocen stan poszkodowanego', 'Sprawdź czy poszkodowany oddycha, ma świadomość, i jakie są jego parametry życiowe.']
               );
               tx.executeSql(
                 'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
-                [2, 'Przykładowy krok 3', 'Opis przykładowego kroku 3']
+                [2, 'Ułóż poszkodowanego', 'Ułóż poszkodowanego w pozycji bocznej ustalonej, aby zabespieczyć go przed ewentualnym zachłyśnięciem oraz ułatwić oddychanie.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [2, 'Zabezpiecz miejsce zdarzenia', 'Upewnij się, że miejsce, w którym znajduje się poszkodowany, jest bezpieczne.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [2, 'Monitoruj parametry życiowe', 'Monitoruj parametry życiowe poszkodowanego, takie jak oddech, świadomość, tętno.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [2, 'Zabezpiecz poszkodowanego', 'Zabezpiecz poszkodowanego przed dalszymi obrażeniami do czasu przybycia służb medycznych.']
+              );
+
+              // Dodawanie kroków dla kategorii "Ból w klatce piersiowej"
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [3, 'Zadzwoń po pomoc', 'Natychmiast zadzwoń po pomoc medyczną.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [3, 'Podtrzymuj poszkodowanego', 'Podtrzymuj poszkodowanego w pozycji wygodnej, preferowanej dla niego.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [3, 'Monitoruj parametry życiowe', 'Monitoruj parametry życiowe poszkodowanego, takie jak oddech, świadomość, tętno.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [3, 'Nie podawaj leków', 'Nie podawaj poszkodowanemu żadnych leków bez konsultacji z służbami medycznymi.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [3, 'Zachowaj spokój', 'Pomagaj poszkodowanemu utrzymać spokój i komfort do czasu przybycia pomocy medycznej.']
+              );
+
+              // Dodawanie kroków dla kategorii "Wypadek komunikacyjny"
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [4, 'Zabezpiecz miejsce wypadku', 'Upewnij się, że miejsce wypadku jest bezpieczne dla wszystkich uczestników.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [4, 'Sprawdź poszkodowanych', 'Sprawdź wszystkich poszkodowanych i ocen ich stan.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [4, 'Zadzwoń po pomoc', 'Natychmiast zadzwoń po pomoc medyczną i ewentualnie straż pożarną lub policję, jeśli jest to konieczne.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [4, 'Nie ruszaj poszkodowanych', 'Jeśli to możliwe, nie ruszaj poszkodowanych, chyba że jest to konieczne ze względów bezpieczeństwa.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [4, 'Zabezpiecz miejsce wypadku', 'Jeśli to możliwe, zabezpiecz miejsce wypadku przed dodatkowymi zagrożeniami.']
+              );
+
+              // Dodawanie kroków dla kategorii "Udar mózgu"
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [5, 'Skontaktuj się z pogotowiem', 'Natychmiast skontaktuj się z pogotowiem ratunkowym i przekaz informacje o podejrzeniu udaru mózgu.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [5, 'Monitoruj objawy', 'Monitoruj objawy udaru mózgu, takie jak asymetria twarzy, trudności w mówieniu, utrata równowagi.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [5, 'Nie podawaj jedzenia ani picia', 'Nie podawaj jedzenia ani picia poszkodowanemu, szczególnie jeśli ma trudności z połykaniem.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [5, 'Utrzymuj spokój', 'Pomagaj poszkodowanemu utrzymać spokój do czasu przybycia pomocy medycznej.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [5, 'Zachowaj ciepło', 'Zachowaj ciepło poszkodowanego, szczególnie jeśli jest narażony na zimno.']
+              );
+
+              // Dodawanie kroków dla kategorii "Omdlenia i zasłabnięcia"
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [6, 'Upewnij się, że miejsce jest bezpieczne', 'Sprawdź, czy miejsce, w którym doszło do omdlenia, jest bezpieczne dla poszkodowanego.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [6, 'Podnieś nogi', 'Podnieś nogi poszkodowanego, aby poprawić krążenie krwi do mózgu.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [6, 'Utrzymuj oddychanie', 'Upewnij się, że poszkodowany ma swobodne oddychanie.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [6, 'Sprawdź parametry życiowe', 'Sprawdź parametry życiowe poszkodowanego, takie jak tętno i oddychanie.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [6, 'Monitoruj stan poszkodowanego', 'Monitoruj stan poszkodowanego i zareaguj na ewentualne pogorszenie się jego stanu.']
+              );
+
+              // Dodawanie kroków dla kategorii "Używanie Defibrylatora AED"
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [7, 'Zadzwoń po pomoc', 'Natychmiast zadzwoń po pomoc medyczną i poproś o dostarczenie AED.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [7, 'Włącz AED', 'Włącz urządzenie AED zgodnie z instrukcjami na urządzeniu.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [7, 'Złóż elektrody', 'Złóż elektrody na klatce piersiowej poszkodowanego zgodnie z instrukcjami AED.']
+              );
+              tx.executeSql(
+                'INSERT INTO Steps (category_id, name, description) VALUES (?, ?, ?)',
+                [7, 'Oceniaj sytuację', 'Oceniaj sytuację i postępuj zgodnie z instrukcjami urządzenia AED.']
               );
             }
           },
