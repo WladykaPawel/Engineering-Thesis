@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Alert} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Calendar } from 'react-native-calendars';
 import SQLite from 'react-native-sqlite-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import PushNotification from 'react-native-push-notification';
 
 const Medicines = () => {
   const [selectedTab, setSelectedTab] = useState('Aktywne');
@@ -20,7 +21,7 @@ const Medicines = () => {
   const [dosingTimes, setDosingTimes] = useState([]);
   const [markedDates, setMarkedDates] = useState({});
   const [inactiveMedicines, setInactiveMedicines] = useState([]);
-  const [showTimePickers, setShowTimePickers] = useState(Array.from({ length: 3 }).fill(false)); // Zakładam maksymalnie 3 dawki, dostosuj to do swoich potrzeb
+  const [showTimePickers, setShowTimePickers] = useState(Array.from({ length: 3 }).fill(false)); // Zakładam maksymalnie 3 dawki lecz może być to zmienione
   const [selectedTimes, setSelectedTimes] = useState(Array.from({ length: 3 }).fill(''));
 
 
@@ -29,6 +30,7 @@ const Medicines = () => {
   const db = SQLite.openDatabase({ name: 'medicines.db', location: 'default' });
 
   useEffect(() => {
+
     db.transaction((tx) => {
       tx.executeSql(
         `CREATE TABLE IF NOT EXISTS medicines (
@@ -57,11 +59,11 @@ const Medicines = () => {
   const addMedicineToDatabase = (medicineData) => {
     console.log('Dodawanie leku do bazy danych:', medicineData);
   
-    // Sprawdź, czy wszystkie godziny przyjmowania zostały wprowadzone
+    // Sprawdzenie, czy wszystkie godziny przyjmowania zostały wprowadzone
     if (medicineData.dosing_times.every((time) => time !== '')) {
       let dosingTimesToSave = medicineData.dosing_times;
   
-      // Jeśli ilość dawek jest mniejsza niż obecna ilość godzin, usuń nadmiarowe godziny
+      // Jeśli ilość dawek jest mniejsza niż obecna ilość godzin, usuwa nadmiarowe godziny
       if (parseInt(medicineData.dose_count) < dosingTimesToSave.length) {
         dosingTimesToSave = dosingTimesToSave.slice(0, parseInt(medicineData.dose_count));
       }
@@ -76,15 +78,54 @@ const Medicines = () => {
             medicineData.end_date,
             medicineData.dose_count,
             medicineData.dosing_schedule,
-            dosingTimesToSave.join(','), // Połącz godziny przyjmowania w jeden ciąg
+            dosingTimesToSave.join(','),
           ],
           (tx, results) => {
             if (results.rowsAffected > 0) {
               console.log('Lek został dodany do bazy danych');
+              Alert.alert(
+                'Potwierdzenie',
+                'Wpis został wprowadzony',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => console.log('OK Pressed'),
+                  },
+                ],
+                { cancelable: false }
+              );
+  
               setDoseCountInput('');
               setSelectedTimes(Array.from({ length: parseInt(medicineData.dose_count) }).fill(''));
               getActiveMedicines();
               getInactiveMedicines();
+  
+              // Dodanie powiadomienia dla każdego wybranego dnia
+              const range = getDatesRange(medicineData.start_date, medicineData.end_date);
+  
+              dosingTimesToSave.forEach((time, index) => {
+                range.forEach((date) => {
+                  const currentDate = new Date().toISOString().split('T')[0];
+                  if (date >= currentDate) {
+                    const notificationTime = new Date(date);
+                    const timeParts = time.split(':');
+                    notificationTime.setHours(parseInt(timeParts[0], 10));
+                    notificationTime.setMinutes(parseInt(timeParts[1], 10));
+                    notificationTime.setMinutes(notificationTime.getMinutes() - 10);
+              
+                    if (notificationTime > new Date()) {
+                      PushNotification.localNotificationSchedule({
+                        channelId: 'channel-id',
+                        title: 'Przypomnienie',
+                        message: 'Za 10 min zarzyj lek: ' + medicineName + '.  Powiadomienie z dnia: ' + notificationTime,
+                        date: notificationTime,
+                        allowWhileIdle: true,
+                      });
+                      console.log(`Dodano powiadomienie na dzień: ${notificationTime.toISOString()}`);
+                    }
+                  }
+                });
+              });
             } else {
               console.log('Dodawanie leku do bazy danych nie powiodło się');
             }
@@ -98,8 +139,6 @@ const Medicines = () => {
       console.log('Nie wprowadzono odpowiedniej ilości godzin przyjmowania.');
     }
   };
-  
-  
   
 
   const deleteMedicine = (id) => {
@@ -121,6 +160,24 @@ const Medicines = () => {
         }
       );
     });
+  };
+
+  const confirmDeleteMedicine = (medicineName, id) => {
+    Alert.alert(
+      'Potwierdzenie',
+      `Czy na pewno chcesz usunąć lek: ${medicineName}?`,
+      [
+        {
+          text: 'Anuluj',
+          style: 'cancel',
+        },
+        {
+          text: 'Usuń',
+          onPress: () => deleteMedicine(id),
+        },
+      ],
+      { cancelable: false }
+    );
   };
 
   const getActiveMedicines = () => {
@@ -162,13 +219,11 @@ const Medicines = () => {
 
   const handleDayPress = (day) => {
     if (!startDate) {
-      // Wybór pierwszej daty zakresu
       setStartDate(day.dateString);
       setMarkedDates({
         [day.dateString]: { selected: true, startingDay: true, endingDay: true },
       });
     } else if (!endDate) {
-      // Wybór drugiej daty zakresu
       const range = getDatesRange(startDate, day.dateString);
       const markedDatesCopy = { ...markedDates };
 
@@ -179,7 +234,6 @@ const Medicines = () => {
       setEndDate(day.dateString);
       setMarkedDates(markedDatesCopy);
     } else {
-      // Resetowanie wyboru
       setStartDate('');
       setEndDate('');
       setMarkedDates({});
@@ -204,7 +258,6 @@ const Medicines = () => {
 
   const handleTimeChange = (event, selected, index) => {
     if (event.nativeEvent.type === 'dismissed') {
-      // Użytkownik zamknął wybór czasu, nie rób nic
       return;
     }
   
@@ -219,8 +272,6 @@ const Medicines = () => {
       const updatedDosingTimes = [...selectedTimes];
       updatedDosingTimes[index] = formattedTime;
       setSelectedTimes(updatedDosingTimes);
-  
-      // Dodaj tę linię, aby zaktualizować dosingTimes
       handleDosingTimeChange(index, formattedTime);
     }
   };
@@ -246,9 +297,12 @@ const Medicines = () => {
                 <Text>Godziny przyjmowania: {medicine.dosing_times}</Text>
                 <TouchableOpacity
                   style={styles.deleteButton}
-                  onPress={() => deleteMedicine(medicine.id)}
+                  onPress={() => confirmDeleteMedicine(medicine.name, medicine.id)}
                 >
-                  <Text style={styles.deleteButtonText}>Usuń lek</Text>
+                  <Image
+                    source={require('./assets/trash.png')}
+                    style={styles.iconKosza}
+                  />
                 </TouchableOpacity>
               </View>
             ))}
@@ -269,10 +323,13 @@ const Medicines = () => {
                 <Text>Godziny przyjmowania: {medicine.dosing_times}</Text>
                 <TouchableOpacity
                   style={styles.deleteButton}
-                  onPress={() => deleteMedicine(medicine.id)}
+                  onPress={() => confirmDeleteMedicine(medicine.name, medicine.id)}
                 >
-                  <Text style={styles.deleteButtonText}>Usuń lek</Text>
-                </TouchableOpacity>
+                  <Image
+                    source={require('./assets/trash.png')}
+                    style={styles.iconKosza}
+                  />
+                </TouchableOpacity>   
               </View>
             ))}
           </ScrollView>
@@ -307,7 +364,6 @@ const Medicines = () => {
               <Picker.Item label="1" value="1" />
               <Picker.Item label="2" value="2" />
               <Picker.Item label="3" value="3" />
-              {/* Dodaj więcej opcji w zależności od potrzeb */}
             </Picker>
 
             {doseCountInput && parseInt(doseCountInput) > 0 && (
@@ -316,11 +372,11 @@ const Medicines = () => {
                   <View key={index}>
                     {selectedTimes[index] === '' ? (
                         <TouchableOpacity style={styles.addButton} onPress={() => setShowTimePickers(prevState => prevState.map((value, i) => i === index ? true : value))}>
-                        <Text>Wybierz godzinę</Text>
+                        <Text style={styles.addButtonText}>Wybierz godzinę</Text>
                          </TouchableOpacity>
                       ) : (
                         <TouchableOpacity style={styles.addButton} onPress={() => setShowTimePickers(prevState => prevState.map((value, i) => i === index ? true : value))}>
-                          <Text>{selectedTimes[index]} </Text>
+                          <Text style={styles.addButtonText}>{selectedTimes[index]} </Text>
                         </TouchableOpacity>
                       )}
                     {showTimePickers[index] && (
@@ -342,6 +398,12 @@ const Medicines = () => {
               current={selectedDate}
               markedDates={markedDates}
               onDayPress={handleDayPress}
+              theme={{
+                calendarBackground: 'white',
+                textSectionTitleColor: '#008577',
+                selectedDayBackgroundColor: '#008577',
+                selectedDayTextColor: 'white',
+              }}
             />
             <TouchableOpacity
               style={styles.addButton}
@@ -414,7 +476,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
-    backgroundColor: '#9dfbb2',
+    backgroundColor: '#00ab99',
   },
   title: {
     fontSize: 24,
@@ -439,7 +501,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   selectedTab: {
-    backgroundColor: '#26c96a',
+    backgroundColor: '#008577',
     borderRadius: 20,
   },
   tabText: {
@@ -453,7 +515,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addButton: {
-    backgroundColor: 'blue',
+    backgroundColor: '#008577',
     padding: 10,
     borderRadius: 5,
     marginTop: 10,
@@ -465,21 +527,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   medicineItem: {
-    borderWidth: 1,
-    borderColor: '#ddd',
+    borderWidth: 2,
+    borderColor: '#00c3af',
     padding: 10,
     marginBottom: 10,
+    borderRadius: 5,
   },
   deleteButton: {
-    backgroundColor: 'red',
-    padding: 5,
-    borderRadius: 5,
-    marginTop: 5,
-  },
-  deleteButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: '75%',
   },
   picker: {
     height: 50,
@@ -488,10 +545,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 10,
     marginTop: 10,
-    backgroundColor: '9dfbb2',
+    backgroundColor: '00ab99',
   },
   filing_place: {
     width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
     marginBottom: 10,
   },
   TimeButtons:

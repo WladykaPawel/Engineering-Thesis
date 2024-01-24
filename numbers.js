@@ -27,7 +27,7 @@ const Numbers = () => {
         </View>
         <TouchableOpacity onPress={() => handleCall(phoneNumber)}>
           <Image
-            source={require('./assets/phoneimg.png')}
+            source={require('./assets/phone2.png')}
             style={styles.image}
             resizeMode="contain"
           />
@@ -46,7 +46,7 @@ const Numbers = () => {
         </View>
         <TouchableOpacity onPress={() => handleCall(emergency)}>
           <Image
-            source={require('./assets/phoneimg.png')}
+            source={require('./assets/phone2.png')}
             style={styles.image}
             resizeMode="contain"
           />
@@ -65,7 +65,7 @@ const Numbers = () => {
         </View>
         <TouchableOpacity onPress={() => handleCall(TIP)}>
           <Image
-            source={require('./assets/phoneimg.png')}
+            source={require('./assets/phone2.png')}
             style={styles.image}
             resizeMode="contain"
           />
@@ -85,7 +85,7 @@ const Numbers = () => {
         </View>
         <TouchableOpacity onPress={() => handleCall(TPK)}>
           <Image
-            source={require('./assets/phoneimg.png')}
+            source={require('./assets/phone2.png')}
             style={styles.image}
             resizeMode="contain"
           />
@@ -104,7 +104,7 @@ const Numbers = () => {
         </View>
         <TouchableOpacity onPress={() => handleCall(police)}>
           <Image
-            source={require('./assets/phoneimg.png')}
+            source={require('./assets/phone2.png')}
             style={styles.image}
             resizeMode="contain"
           />
@@ -123,7 +123,7 @@ const Numbers = () => {
         </View>
         <TouchableOpacity onPress={() => handleCall(firefighting)}>
           <Image
-            source={require('./assets/phoneimg.png')}
+            source={require('./assets/phone2.png')}
             style={styles.image}
             resizeMode="contain"
           />
@@ -143,7 +143,7 @@ const Numbers = () => {
         </View>
         <TouchableOpacity onPress={() => handleCall(GOPR)}>
           <Image
-            source={require('./assets/phoneimg.png')}
+            source={require('./assets/phone2.png')}
             style={styles.image}
             resizeMode="contain"
           />
@@ -163,7 +163,7 @@ const Numbers = () => {
         </View>
         <TouchableOpacity onPress={() => handleCall(WOPR)}>
           <Image
-            source={require('./assets/phoneimg.png')}
+            source={require('./assets/phone2.png')}
             style={styles.image}
             resizeMode="contain"
           />
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    color: '#000000',
+    color: '#f9dbd2',
     maxWidth: 300,
   },
   buttoncontainer: {
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#9dfbb2',
+    backgroundColor: '#008577',
     width: '100%', 
     padding: 20,
   },
